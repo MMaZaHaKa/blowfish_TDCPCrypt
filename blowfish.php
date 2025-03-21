@@ -30,24 +30,6 @@ class Blowfish {
       $this->IV = $this->_pad($iv);
     }
   }
-  
-  /**
-   * Генерирует "обработанный" IV: шифрует нулевой блок в режиме ECB с тем же ключом.
-   *
-   * Это необходимо, чтобы исправить ситуацию, когда при дешифровке в режиме CBC передаётся IV, состоящий из нулевых байтов.
-   *
-   * @param string $key Ключ шифрования.
-   * @param int $padding Режим паддинга (по умолчанию BLOWFISH_PADDING_RFC).
-   * @return string Возвращает обработанный IV.
-   */
-  function createProcessedIV($key, $padding = self::BLOWFISH_PADDING_RFC) {
-    // Создаём экземпляр для ECB-шифрования (IV не требуется)
-    $ecb = new Blowfish($key, self::BLOWFISH_MODE_EBC, $padding);
-    $zero_block = str_repeat("\0", 8);
-    // Шифруем нулевой блок в режиме ECB
-    $processedIV = $ecb->encrypt($zero_block, $key, self::BLOWFISH_MODE_EBC, $padding);
-    return $processedIV;
-  }
 
   /**
    * Encrypts plaintext using Blowfish with the given key.
@@ -65,7 +47,6 @@ class Blowfish {
       throw new Exception('CBC Mode requires an IV key');
       return;
     }
-    
     $ciphertext = '';
     $fish = new Blowfish($key, $mode, $padding, $iv);
     $block = &$fish->blockSize;
@@ -99,14 +80,9 @@ class Blowfish {
    * @author Matt Harris
    **/
   function decrypt($ciphertext, $key, $mode=Blowfish::BLOWFISH_MODE_CBC, $padding=Blowfish::BLOWFISH_PADDING_RFC, $iv=NULL) {
-    /*if ( $mode == Blowfish::BLOWFISH_MODE_CBC and empty($iv) ) {
+    if ( $mode == Blowfish::BLOWFISH_MODE_CBC and empty($iv) ) {
       throw new Exception('CBC Mode requires an IV key');
       return;
-    }*/
-    
-    // Если IV состоит из нулевых байтов, генерируем корректный processedIV
-    if ($mode == Blowfish::BLOWFISH_MODE_CBC && (($iv === str_repeat("\0", 8)) || empty($iv))) {
-      $iv = self::createProcessedIV($key, $padding);
     }
       
     $plaintext = '';
